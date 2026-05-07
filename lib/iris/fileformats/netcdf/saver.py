@@ -22,7 +22,6 @@ Also : `CF Conventions <https://cfconventions.org/>`_.
 import collections
 from itertools import repeat, zip_longest
 import os
-import os.path
 from pathlib import Path
 import re
 import string
