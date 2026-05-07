@@ -88,7 +88,7 @@ except ImportError:
     STRATIFY_AVAILABLE = False
 
 #: Basepath for test results.
-_RESULT_PATH = os.path.join(os.path.dirname(__file__), "results")
+_RESULT_PATH = str(Path(__file__).parent / "results")
 MIN_PICKLE_PROTOCOL = 4
 
 if "--data-files-used" in sys.argv:
@@ -988,7 +988,7 @@ class PPTest:
 
         """
         # Watch out for a missing reference text file
-        if not os.path.isfile(reference_txt_path):
+        if not Path(reference_txt_path).is_file():
             if reference_cubes:
                 temp_pp_path = iris.util.create_temp_filename(".pp")
                 try:
@@ -1059,7 +1059,7 @@ def skip_data(fn):
 
     no_data = (
         not iris.config.TEST_DATA_DIR
-        or not os.path.isdir(iris.config.TEST_DATA_DIR)
+        or not Path(iris.config.TEST_DATA_DIR).is_dir()
         or os.environ.get("IRIS_TEST_NO_DATA")
     )
 
