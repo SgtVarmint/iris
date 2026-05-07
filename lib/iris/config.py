@@ -178,7 +178,7 @@ override = os.environ.get("OVERRIDE_TEST_DATA_REPOSITORY")
 if override:
     TEST_DATA_DIR = None
     if Path(override).expanduser().is_dir():
-        TEST_DATA_DIR = Path(override).absolute()
+        TEST_DATA_DIR = str(Path(override).absolute())
 
 PALETTE_PATH = get_dir_option(
     _RESOURCE_SECTION, "palette_path", CONFIG_PATH / "palette"
