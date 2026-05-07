@@ -23,6 +23,7 @@ import collections
 from itertools import repeat, zip_longest
 import os
 import os.path
+from pathlib import Path
 import re
 import string
 import typing
@@ -418,13 +419,13 @@ class Saver:
         else:
             # Given a filepath string/path : create a dataset from that
             try:
-                self.filepath = os.path.abspath(filename)
+                self.filepath = str(Path(filename).absolute())
                 self._dataset = _thread_safe_nc.DatasetWrapper(
                     self.filepath, mode="w", format=netcdf_format
                 )
             except RuntimeError:
-                dir_name = os.path.dirname(self.filepath)
-                if not os.path.isdir(dir_name):
+                dir_name = Path(self.filepath).parent
+                if not dir_name.is_dir():
                     msg = "No such file or directory: {}".format(dir_name)
                     raise IOError(msg)
                 if not os.access(dir_name, os.R_OK | os.W_OK):
