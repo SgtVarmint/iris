@@ -26,7 +26,6 @@ import io
 import json
 import math
 import os
-import os.path
 from pathlib import Path
 import re
 import shutil
@@ -287,20 +286,21 @@ class IrisTest(unittest.TestCase):
 
         """
         if not isinstance(relative_path, str):
-            relative_path = os.path.join(*relative_path)
+            relative_path = Path(*relative_path)
         test_data_dir = iris.config.TEST_DATA_DIR
         if test_data_dir is None:
             test_data_dir = ""
-        data_path = os.path.join(test_data_dir, relative_path)
+        data_path = Path(test_data_dir) / relative_path
+        data_path_str = str(data_path)
 
         if _EXPORT_DATAPATHS_FILE is not None:
-            _EXPORT_DATAPATHS_FILE.write(data_path + "\n")
+            _EXPORT_DATAPATHS_FILE.write(data_path_str + "\n")
 
-        if isinstance(data_path, str) and not os.path.exists(data_path):
+        if isinstance(data_path, str) and not data_path.exists():
             # if the file is gzipped, ungzip it and return the path of the ungzipped
             # file.
-            gzipped_fname = data_path + ".gz"
-            if os.path.exists(gzipped_fname):
+            gzipped_fname = Path(data_path_str + ".gz")
+            if gzipped_fname.exists():
                 with gzip.open(gzipped_fname, "rb") as gz_fh:
                     try:
                         with open(data_path, "wb") as fh:
@@ -309,7 +309,7 @@ class IrisTest(unittest.TestCase):
                         # Put ungzipped data file in a temporary path, since we
                         # can't write to the original path (maybe it is owned by
                         # the system.)
-                        _, ext = os.path.splitext(data_path)
+                        ext = data_path.suffix
                         data_path = iris.util.create_temp_filename(suffix=ext)
                         with open(data_path, "wb") as fh:
                             fh.writelines(gz_fh)
@@ -323,8 +323,8 @@ class IrisTest(unittest.TestCase):
 
         """
         if not isinstance(relative_path, str):
-            relative_path = os.path.join(*relative_path)
-        return os.path.abspath(os.path.join(_RESULT_PATH, relative_path))
+            relative_path = Path(*relative_path)
+        return str(Path(_RESULT_PATH).absolute() / relative_path)
 
     def result_path(self, basename=None, ext=""):
         """Return the full path to a test result, generated from the \
@@ -342,9 +342,8 @@ class IrisTest(unittest.TestCase):
             ext = "." + ext
 
         # Generate the folder name from the calling file name.
-        path = os.path.abspath(inspect.getfile(self.__class__))
-        path = os.path.splitext(path)[0]
-        sub_path = path.rsplit("iris", 1)[1].split("tests", 1)[1][1:]
+        path = Path(inspect.getfile(self, __class__)).absolute().parent
+        sub_path = path.name
 
         # Generate the file name from the calling function name?
         if basename is None:
@@ -355,11 +354,11 @@ class IrisTest(unittest.TestCase):
                     break
         filename = basename + ext
 
-        result = os.path.join(
-            self.get_result_path(""),
-            sub_path.replace("test_", ""),
-            self.__class__.__name__.replace("Test_", ""),
-            filename,
+        result = Path(
+            self.get_result_path("")
+            / sub_path.replace("test_", "")
+            / self.__class__.__name__.replace("Test_", "")
+            / filename
         )
         return result
 
@@ -758,13 +757,13 @@ class IrisTest(unittest.TestCase):
         #   ird -t => 'iris.tests.test_plot.TestContourf.test_tx'
         bits = self.id().split(".")
         if bits[0] == "__main__":
-            floc = sys.modules["__main__"].__file__
-            path, file_name = os.path.split(os.path.abspath(floc))
-            bits[0] = os.path.splitext(file_name)[0]
-            folder, location = os.path.split(path)
+            floc = Path(sys.modules["__main__"].__file__).absolute()
+            path, bits[0] = floc.parent, floc.stem
+
+            folder, location = path.parent, path.name
             bits = [location] + bits
             while location not in ["iris", "gallery_tests"]:
-                folder, location = os.path.split(folder)
+                folder, location = folder.parent, folder.name
                 bits = [location] + bits
         test_id = ".".join(bits)
 
@@ -775,15 +774,15 @@ class IrisTest(unittest.TestCase):
         return test_id + "." + str(assertion_id)
 
     def _check_reference_file(self, reference_path):
-        reference_exists = os.path.isfile(reference_path)
+        reference_exists = Path(reference_path).is_file()
         if not (reference_exists or os.environ.get("IRIS_TEST_CREATE_MISSING")):
             msg = "Missing test result: {}".format(reference_path)
             raise AssertionError(msg)
         return reference_exists
 
     def _ensure_folder(self, path):
-        dir_path = os.path.dirname(path)
-        if not os.path.exists(dir_path):
+        dir_path = Path(path).parent
+        if not dir_path.exists():
             os.makedirs(dir_path)
 
     def check_graphic(self):
