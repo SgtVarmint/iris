@@ -21,7 +21,6 @@ References
 
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable, MutableMapping
-import os
 from pathlib import Path
 import re
 from typing import ClassVar, Optional
@@ -1366,7 +1365,9 @@ class CFReader:
         self._own_file = False
         if isinstance(file_source, str):
             # Create from filepath : open it + own it (=close when we die).
-            self._filename = os.path.expanduser(file_source)
+            self._filename = str(Path(file_source).expanduser())
+            if file_source.startswith("https:"):
+                self._filename = file_source
             self._dataset = _thread_safe_nc.DatasetWrapper(self._filename, mode="r")
             self._own_file = True
         else:
